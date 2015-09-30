@@ -49,10 +49,11 @@ public class Sender {
             InetAddress IPAddress = InetAddress.getByName("localhost");
             byte[] sendData = new byte[1024];
             DatagramPacket sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
-            senderSocket.send(sendPkt);
+            senderSocket.send(sendPkt);  //
             System.out.println("Send window's size and maximum seq. number to the reciever.");
             char windowTracker[] = new char[window];
             Timer windowTimer[] = new Timer[window];
+            DatagramPacket ackPkt;
             /*  For windowTracker we will have the following 
              *   S = sent   
              *   A = Acknowledged
@@ -60,13 +61,15 @@ public class Sender {
              */
             int i = 0;
             do {
-                sendData[0] = (byte)i;
-                sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
-                senderSocket.send(sendPkt);
-                System.out.println("");
-                if( i < window){
+                boolean sent=false;
+                if( i < window){ // if i is sending the first packets of the window
+                   sendData[0] = (byte)i;
+                    sent = true;
+                }else{
                     
-                    
+                }
+                if(sent == true){
+                    System.out.println("Packet "+i+" is sent, window ");
                 }
 
             } while (true);

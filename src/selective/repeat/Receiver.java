@@ -22,11 +22,20 @@ public class Receiver {
     DatagramSocket receiverSocket = new DatagramSocket(9876);
     byte[] rcvData = new byte[1024];
     DatagramPacket rcvPkt = new DatagramPacket(rcvData, rcvData.length);
-    receiverSocket.receive (rcvPkt); // should grab all the packet info and everythin
+    receiverSocket.receive (rcvPkt); // should grab all the packet info and everything
     InetAddress IPAddress = rcvPkt.getAddress();
     int port = receiverSocket.getPort();
-    
+    DatagramPacket ackPkt;
     rcvData = rcvPkt.getData();
+    boolean drop[] = new boolean[(int)rcvData[0]];
+    
+    int a = (int)rcvData[0];
+    if(drop[a] == false){
+        ackPkt= new DatagramPacket(rcvData, rcvData.length);
+    }
+    else{
+        drop[a] = false;
+    }
     
      
     
