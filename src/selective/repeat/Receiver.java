@@ -12,23 +12,32 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author Nicolas
+ * @author Nik
  */
 public class Receiver {
-
-    public Receiver() {
-
-        try {
-            DatagramSocket receiverSocket = new DatagramSocket(9876);
-            byte[] rcvData = new byte[1024];
-            DatagramPacket rcvPkt = new DatagramPacket(rcvData, rcvData.length);
-
-            receiverSocket.receive(rcvPkt);
-            InetAddress IPAddress = rcvPkt.getAddress();
-            int port = receiverSocket.getPort();
-        } catch (IOException ex) {
+    
+    public Receiver(){
+        
+    try{
+    DatagramSocket receiverSocket = new DatagramSocket(9876);
+    byte[] rcvData = new byte[1024];
+    DatagramPacket rcvPkt = new DatagramPacket(rcvData, rcvData.length);
+    receiverSocket.receive (rcvPkt); // should grab all the packet info and everythin
+    InetAddress IPAddress = rcvPkt.getAddress();
+    int port = receiverSocket.getPort();
+    
+    rcvData = rcvPkt.getData();
+    
+     
+    
+    
+}
+    catch (IOException ex) {
             Logger.getLogger(Sender.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }
+    
+    //public void 
+    
+
 }
