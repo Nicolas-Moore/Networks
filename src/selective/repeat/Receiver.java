@@ -27,6 +27,7 @@ public class Receiver {
     int port = receiverSocket.getPort();
     DatagramPacket ackPkt;
     rcvData = rcvPkt.getData();
+    System.out.println((int)rcvData[0]);
     boolean drop[] = new boolean[(int)rcvData[0]];
     
     int a = (int)rcvData[0];
