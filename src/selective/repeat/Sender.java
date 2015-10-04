@@ -18,7 +18,7 @@ import java.util.Timer;
  * @author Nicolas Moore
  *
  */
-public class Sender {
+public class Sender{
 
     Scanner in = new Scanner(System.in);
     public static final int size = 128;
@@ -26,15 +26,15 @@ public class Sender {
     int sequence = Integer.MAX_VALUE;
     int drop[] = new int[size];
 
+
+
     public static void main(String ARGS[]) {
-        Sender driver = new Sender();
+        Sender start  = new Sender();
     }
 
     public Sender() {
-
         setWindow();
         setSequence();
-
         if (window * 2 > sequence) {
             do {
                 System.out.println("Your window cannot be over half the size of your max sequence number.\n");
@@ -50,10 +50,13 @@ public class Sender {
             InetAddress IPAddress = InetAddress.getByName("localhost");
             byte[] sendData = new byte[size];
             byte[] ackData = new byte[size];
+            sendData = prepData(sendData);
             DatagramPacket sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
             DatagramPacket ackPkt = new DatagramPacket(ackData, sendData.length, IPAddress, 9879);
             senderSocket.send(sendPkt);  //
             System.out.println("Send window's size and maximum seq. number to the reciever.");
+            int k = sendData[0];
+            System.out.println(k);
             char windowTracker[] = new char[sequence];
             Timer windowTimer[] = new Timer[sequence];
             for (int i = 0; i < sequence; i++) {
@@ -81,9 +84,10 @@ public class Sender {
                     i++;
                 }
                 if (sent == false) { // if we are at the edge of our window, we listen
+
                     acknowledgementSocket.receive(ackPkt);
                     ackData = ackPkt.getData();
-                    
+
                     int ack = ackData[0];
                     windowTracker[ack] = 'a';
                     String message = messageSender(windowTracker, i, true);
@@ -91,8 +95,8 @@ public class Sender {
                 }
             } while (true);
 
-        } catch (IOException ex) {
-            Logger.getLogger(Sender.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException exc) {
+            Logger.getLogger(Sender.class.getName()).log(Level.SEVERE, null, exc);
         }
     }
 
@@ -105,31 +109,59 @@ public class Sender {
         if (ack == false) {
             message = "Packet " + n + " is sent, window["; // do his format here
             // do a ton of if statements to show what the window looks like.
-           
+
         } else { // this is an acknowledgement message
-           message = " Ack " +n+ " is recieved, window[";
+            message = " Ack " + n + " is recieved, window[";
 
         }
-         if (n < window) { // if we are at the start of the packet.
+        if (n < window) { // if we are at the start of the packet.
 
-                switch (array[0]) {
+            switch (array[0]) {
+                case 's':
+                    message = message + "0*";
+                    break;
+                case 'a':
+
+                case 'n':
+                    message = message + "0";
+                default:
+                    break;
+
+            }
+
+            for (int i = 1; i < window; i++) {
+                switch (array[i]) {
                     case 's':
-                        message = message + "0*";
+                        message = message + "," + i + "*";
                         break;
                     case 'a':
 
                     case 'n':
-                        message = message + "0";
+                        message = message + "," + i;
                     default:
                         break;
-
                 }
+            }
+        } else { // we have shifted our window at this point
+            switch (array[n + 1 - window]) {
+                case 's':
+                    message = message + (n + 1 - window);
+                case 'a':
 
-                for (int i = 1; i < window; i++) {
+                case 'n':
+                    message = message + (n + 1 - window);
+                default:
+                    break;
+            }
+
+            for (int i = n + 2 - window; i <= n; i++) { // this should be shifted to our window.
+                if (i > sequence - 1) {
+                    message = message + "-"; // catches outside of window errors
+                } else {
                     switch (array[i]) {
                         case 's':
-                            message = message + "," + i + "*";
-                            break;
+                            message = message + "," + i;
+
                         case 'a':
 
                         case 'n':
@@ -138,43 +170,15 @@ public class Sender {
                             break;
                     }
                 }
-            } else { // we have shifted our window at this point
-                switch (array[n + 1 - window]) {
-                    case 's':
-                        message = message + (n + 1 - window);
-                    case 'a':
-
-                    case 'n':
-                        message = message + (n + 1 - window);
-                    default:
-                        break;
-                }
-
-                for (int i = n + 2 - window; i <= n; i++) { // this should be shifted to our window.
-                    if (i > sequence - 1) {
-                        message = message + "-"; // catches outside of window errors
-                    } else {
-                        switch (array[i]) {
-                            case 's':
-                                message = message + "," + i;
-
-                            case 'a':
-
-                            case 'n':
-                                message = message + "," + i;
-                            default:
-                                break;
-                        }
-                    }
-                }
             }
-            message = message + "]";
-            return message;
+        }
+        message = message + "]";
+        return message;
     }
 
     /*
-    This method reads input from the user and sets the window size
-    */
+     This method reads input from the user and sets the window size
+     */
     public void setWindow() {
         do {
             System.out.print("Enter the window’s size on the sender: ");
@@ -186,8 +190,8 @@ public class Sender {
     }
 
     /*
-    This method reads input from the user to set the sequence size
-    */
+     This method reads input from the user to set the sequence size
+     */
     public void setSequence() {
         do {
             System.out.print("Enter the maximum sequence number on the sender: ");
@@ -199,35 +203,34 @@ public class Sender {
     }
 
     /*
-    This method will take input form the user to determine which packets to drop
-    */
+     This method will take input form the user to determine which packets to drop
+     */
     public void setDrop() {
-            
-            System.out.print("Select the packet(s) that will be dropped:\n (seperate with spaces):");
-            String input = in.next();
-            String[] seperate = input.split(" ");
-            for (int i = 0; i < seperate.length; i++) {
-                int value = Integer.parseInt(seperate[i]);
-                if (value < 0 || value >= sequence) {
-                    System.out.println(value + " is an invalid packet number to drop.");
-                }
-                else{
-                    drop[i] = value;
-                }
+
+        System.out.print("Select the packet(s) that will be dropped:\n (seperate with spaces):");
+        String input = in.next();
+        String[] seperate = input.split(" ");
+        for (int i = 0; i < seperate.length; i++) {
+            int value = Integer.parseInt(seperate[i]);
+            if (value < 0 || value >= sequence) {
+                System.out.println(value + " is an invalid packet number to drop.");
+            } else {
+                drop[i] = value;
             }
+        }
 
     }
-    
+
     /*
-    This method will prepare the data to be sent initially, with the first spot on the array being the sequence number
-    and the following bytes being the packets to drop.
-    */
-    public byte[] prepData(byte[] in_data){
-        in_data[0] = (byte)sequence;
-        int counter=1;
-        for(int i =0; i<size; i++){
-            if(drop[i]!=0){
-                in_data[counter] = (byte)drop[i];
+     This method will prepare the data to be sent initially, with the first spot on the array being the sequence number
+     and the following bytes being the packets to drop.
+     */
+    public byte[] prepData(byte[] in_data) {
+        in_data[0] = (byte) sequence;
+        int counter = 1;
+        for (int i = 0; i < size; i++) {
+            if (drop[i] != 0) {
+                in_data[counter] = (byte) drop[i];
                 counter++;
             }
         }
