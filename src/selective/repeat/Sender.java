@@ -18,7 +18,7 @@ import java.util.Timer;
  * @author Nicolas Moore
  *
  */
-public class Sender{
+public class Sender {
 
     Scanner in = new Scanner(System.in);
     public static final int size = 128;
@@ -26,10 +26,8 @@ public class Sender{
     int sequence = Integer.MAX_VALUE;
     int drop[] = new int[size];
 
-
-
     public static void main(String ARGS[]) {
-        Sender start  = new Sender();
+        Sender start = new Sender();
     }
 
     public Sender() {
@@ -41,9 +39,7 @@ public class Sender{
                 setWindow();
             } while (window * 2 > sequence);
         }
-
         setDrop();
-
         try {
             DatagramSocket senderSocket = new DatagramSocket(9877);
             DatagramSocket acknowledgementSocket = new DatagramSocket(9878);
@@ -52,11 +48,11 @@ public class Sender{
             byte[] ackData = new byte[size];
             sendData = prepData(sendData);
             DatagramPacket sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
-            DatagramPacket ackPkt = new DatagramPacket(ackData, sendData.length, IPAddress, 9879);
+            DatagramPacket ackPkt = new DatagramPacket(ackData, sendData.length);
             senderSocket.send(sendPkt);  //
+
             System.out.println("Send window's size and maximum seq. number to the reciever.");
-            int k = sendData[0];
-            System.out.println(k);
+            
             char windowTracker[] = new char[sequence];
             Timer windowTimer[] = new Timer[sequence];
             for (int i = 0; i < sequence; i++) {
@@ -72,24 +68,27 @@ public class Sender{
                 boolean sent = false;
                 if (i < window) { // if i is sending the first packets of the window
                     sendData[0] = (byte) i;
+                    sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
+                    senderSocket.send(sendPkt);
                     sent = true;
-                } else {// we have sent up to our window, so now we wait for acknowledgements
-
+                }else if(windowTracker[i-window] == 'a') { 
+                    sendData[0] = (byte) i;
+                    sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
+                    senderSocket.send(sendPkt);
+                    sent = true;
                 }
                 if (sent == true) {
                     windowTracker[i] = 's';
                     String message = messageSender(windowTracker, i, false);
                     System.out.println(message);
-
                     i++;
                 }
                 if (sent == false) { // if we are at the edge of our window, we listen
-
                     acknowledgementSocket.receive(ackPkt);
                     ackData = ackPkt.getData();
-
                     int ack = ackData[0];
                     windowTracker[ack] = 'a';
+                    System.out.println("Received Packet "+ack);
                     String message = messageSender(windowTracker, i, true);
                     System.out.println(message);
                 }
@@ -208,8 +207,10 @@ public class Sender{
     public void setDrop() {
 
         System.out.print("Select the packet(s) that will be dropped:\n (seperate with spaces):");
-        String input = in.next();
-        String[] seperate = input.split(" ");
+        in.nextLine(); // catching return characters
+        String input = in.nextLine();// reading in the numbers to skip
+        String[] seperate = input.split("\\s+");
+
         for (int i = 0; i < seperate.length; i++) {
             int value = Integer.parseInt(seperate[i]);
             if (value < 0 || value >= sequence) {
