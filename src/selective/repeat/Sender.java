@@ -21,9 +21,10 @@ import java.util.Timer;
 public class Sender {
 
     Scanner in = new Scanner(System.in);
+    public static final int size = 128;
     int window = 0;
     int sequence = Integer.MAX_VALUE;
-    int drop = -1;
+    int drop[] = new int[size];
 
     public static void main(String ARGS[]) {
         Sender driver = new Sender();
@@ -45,9 +46,12 @@ public class Sender {
 
         try {
             DatagramSocket senderSocket = new DatagramSocket(9877);
+            DatagramSocket acknowledgementSocket = new DatagramSocket(9878);
             InetAddress IPAddress = InetAddress.getByName("localhost");
-            byte[] sendData = new byte[1024];
+            byte[] sendData = new byte[size];
+            byte[] ackData = new byte[size];
             DatagramPacket sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
+            DatagramPacket ackPkt = new DatagramPacket(ackData, sendData.length, IPAddress, 9879);
             senderSocket.send(sendPkt);  //
             System.out.println("Send window's size and maximum seq. number to the reciever.");
             char windowTracker[] = new char[sequence];
@@ -73,14 +77,18 @@ public class Sender {
                     windowTracker[i] = 's';
                     String message = messageSender(windowTracker, i, false);
                     System.out.println(message);
-                    
+
                     i++;
                 }
-            if(sent == false){ // if we are at the edge of our window, we listen
-                senderSocket.receive(sendPkt);
-                sendData = sendPkt.getData();
-                System.out.println((int)sendData[0]);
-            }
+                if (sent == false) { // if we are at the edge of our window, we listen
+                    acknowledgementSocket.receive(ackPkt);
+                    ackData = ackPkt.getData();
+                    
+                    int ack = ackData[0];
+                    windowTracker[ack] = 'a';
+                    String message = messageSender(windowTracker, i, true);
+                    System.out.println(message);
+                }
             } while (true);
 
         } catch (IOException ex) {
@@ -93,10 +101,16 @@ public class Sender {
      the boolean is whether or not this is an acknowledgement message or not
      */
     public String messageSender(char array[], int n, boolean ack) {
+        String message;
         if (ack == false) {
-            String message = "Packet " + n + " is sent. Window["; // do his format here
+            message = "Packet " + n + " is sent, window["; // do his format here
             // do a ton of if statements to show what the window looks like.
-            if (n < window) { // if we are at the start of the packet.
+           
+        } else { // this is an acknowledgement message
+           message = " Ack " +n+ " is recieved, window[";
+
+        }
+         if (n < window) { // if we are at the start of the packet.
 
                 switch (array[0]) {
                     case 's':
@@ -127,11 +141,11 @@ public class Sender {
             } else { // we have shifted our window at this point
                 switch (array[n + 1 - window]) {
                     case 's':
-                        message = message + (n+1-window);
+                        message = message + (n + 1 - window);
                     case 'a':
 
                     case 'n':
-                        message = message + (n+1-window);
+                        message = message + (n + 1 - window);
                     default:
                         break;
                 }
@@ -156,11 +170,11 @@ public class Sender {
             }
             message = message + "]";
             return message;
-        } else { // this is an acknowledgement message
-            return "aaaah";
-        }
     }
 
+    /*
+    This method reads input from the user and sets the window size
+    */
     public void setWindow() {
         do {
             System.out.print("Enter the window’s size on the sender: ");
@@ -171,6 +185,9 @@ public class Sender {
         } while (window < 0);
     }
 
+    /*
+    This method reads input from the user to set the sequence size
+    */
     public void setSequence() {
         do {
             System.out.print("Enter the maximum sequence number on the sender: ");
@@ -181,14 +198,39 @@ public class Sender {
         } while (sequence < 0);
     }
 
+    /*
+    This method will take input form the user to determine which packets to drop
+    */
     public void setDrop() {
-        do {
-            System.out.print("Select the packet(s) that will be dropped:");
-            drop = in.nextInt();
-            if (drop < 0 || drop >= sequence) {
-                System.out.println("That is an invalid packet number to drop.");
+            
+            System.out.print("Select the packet(s) that will be dropped:\n (seperate with spaces):");
+            String input = in.next();
+            String[] seperate = input.split(" ");
+            for (int i = 0; i < seperate.length; i++) {
+                int value = Integer.parseInt(seperate[i]);
+                if (value < 0 || value >= sequence) {
+                    System.out.println(value + " is an invalid packet number to drop.");
+                }
+                else{
+                    drop[i] = value;
+                }
             }
-        } while (drop < 0 || drop >= sequence);
-    }
 
+    }
+    
+    /*
+    This method will prepare the data to be sent initially, with the first spot on the array being the sequence number
+    and the following bytes being the packets to drop.
+    */
+    public byte[] prepData(byte[] in_data){
+        in_data[0] = (byte)sequence;
+        int counter=1;
+        for(int i =0; i<size; i++){
+            if(drop[i]!=0){
+                in_data[counter] = (byte)drop[i];
+                counter++;
+            }
+        }
+        return in_data;
+    }
 }
