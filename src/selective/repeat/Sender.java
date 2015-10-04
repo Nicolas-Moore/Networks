@@ -31,7 +31,7 @@ public class Sender {
     }
 
     public Sender() {
-
+        
         setWindow();
         setSequence();
 
@@ -52,10 +52,13 @@ public class Sender {
             byte[] ackData = new byte[size];
             DatagramPacket sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
             DatagramPacket ackPkt = new DatagramPacket(ackData, sendData.length, IPAddress, 9879);
+            sendData  = prepData(sendData);
             senderSocket.send(sendPkt);  //
+            //Receiver rec = new Receiver();
             System.out.println("Send window's size and maximum seq. number to the reciever.");
             char windowTracker[] = new char[sequence];
             Timer windowTimer[] = new Timer[sequence];
+            
             for (int i = 0; i < sequence; i++) {
                 windowTracker[i] = 'n';
             }
@@ -81,11 +84,15 @@ public class Sender {
                     i++;
                 }
                 if (sent == false) { // if we are at the edge of our window, we listen
-                    acknowledgementSocket.receive(ackPkt);
-                    ackData = ackPkt.getData();
                     
+                    //acknowledgementSocket.receive(ackPkt);
+                    ackData = ackPkt.getData();
                     int ack = ackData[0];
-                    windowTracker[ack] = 'a';
+                    windowTracker[0] = 'a';
+                    // if we acknowledge the one right before the window
+                    if(windowTracker[i-window] == 'a'){
+                        i++;
+                    }
                     String message = messageSender(windowTracker, i, true);
                     System.out.println(message);
                 }
@@ -117,7 +124,6 @@ public class Sender {
                         message = message + "0*";
                         break;
                     case 'a':
-
                     case 'n':
                         message = message + "0";
                     default:
@@ -131,7 +137,6 @@ public class Sender {
                             message = message + "," + i + "*";
                             break;
                         case 'a':
-
                         case 'n':
                             message = message + "," + i;
                         default:
@@ -157,9 +162,7 @@ public class Sender {
                         switch (array[i]) {
                             case 's':
                                 message = message + "," + i;
-
                             case 'a':
-
                             case 'n':
                                 message = message + "," + i;
                             default:
