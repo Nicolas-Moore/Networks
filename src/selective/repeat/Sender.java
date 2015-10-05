@@ -228,7 +228,8 @@ public class Sender {
      */
     public byte[] prepData(byte[] in_data) {
         in_data[0] = (byte) sequence;
-        int counter = 1;
+        in_data[1] =(byte) window;
+        int counter = 2;
         for (int i = 0; i < size; i++) {
             if (drop[i] != 0) {
                 in_data[counter] = (byte) drop[i];
