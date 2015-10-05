@@ -92,13 +92,22 @@ public class Sender {
                     windowTracker[ack] = 'a';
                     System.out.println("Ack "+ack+" received, window"+messageSender(windowStart,windowTracker));
                 }
-            } while (true);
+            } while (finish(windowTracker));
 
         } catch (IOException exc) {
             Logger.getLogger(Sender.class.getName()).log(Level.SEVERE, null, exc);
         }
     }
 
+    public boolean finish(char[] array){
+        boolean finished = true;
+        for(int i =0; i< array.length;i++){
+            if(array[i] != 'a'){
+                finished = false;
+            }
+        }
+        return finished;
+    }
     /*
      This method will take in the array with the packet statuses and the current packet just sent
      the boolean is whether or not this is an acknowledgement message or not
