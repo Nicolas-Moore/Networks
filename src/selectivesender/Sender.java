@@ -214,10 +214,14 @@ public class Sender {
      */
     public void setDrop() {
 
-        System.out.print("Select the packet(s) that will be dropped:\n (seperate with spaces):");
+        System.out.print("Select the packet(s) that will be dropped:\n (seperate with spaces, enter none to not drop any packets): ");
         in.nextLine(); // catching return characters
         String input = in.nextLine();// reading in the numbers to skip
         String[] seperate = input.split("\\s+");
+        
+        if(input.equals("none")){
+            return;
+        }
 
         for (int i = 0; i < seperate.length; i++) {
             int value = Integer.parseInt(seperate[i]);
