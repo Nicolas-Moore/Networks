@@ -83,9 +83,14 @@ public class Sender {
             sendData = prepData(sendData);
             DatagramPacket sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
             DatagramPacket ackPkt = new DatagramPacket(ackData, sendData.length);
-            senderSocket.send(sendPkt);  //
-
+            senderSocket.send(sendPkt);  // sending sequence, window and drop packet information
             System.out.println("Send window's size and maximum seq. number to the reciever.");
+            acknowledgementSocket.receive(ackPkt);
+            ackData = ackPkt.getData();
+            if(ackData[0] == (byte) sequence){
+                System.out.println("Received Confirmation from the receiver.");
+            }
+
             int windowStart = 0;
             char windowTracker[] = new char[sequence];
             Timer windowTimer[] = new Timer[sequence];
@@ -141,6 +146,7 @@ public class Sender {
         }
     }
 
+    
     public boolean finish(char[] array){
         for(int i =0; i< array.length;i++){
             if(array[i] != 'a'){
