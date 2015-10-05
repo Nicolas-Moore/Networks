@@ -157,6 +157,7 @@ public class Sender {
         String message = "[";
         for(int i =0; i< window;i++){
             if( (windowStart+i) < sequence){
+
             switch(array[windowStart+i]){
                 case 's':
                     message = message +""+(windowStart+i)+"*";
