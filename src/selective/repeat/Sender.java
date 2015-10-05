@@ -52,7 +52,7 @@ public class Sender {
             senderSocket.send(sendPkt);  //
 
             System.out.println("Send window's size and maximum seq. number to the reciever.");
-            
+            int windowStart = 0;
             char windowTracker[] = new char[sequence];
             Timer windowTimer[] = new Timer[sequence];
             for (int i = 0; i < sequence; i++) {
@@ -71,7 +71,7 @@ public class Sender {
                     sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
                     senderSocket.send(sendPkt);
                     sent = true;
-                }else if(windowTracker[i-window] == 'a') { 
+                } else if (windowTracker[i - window] == 'a') {
                     sendData[0] = (byte) i;
                     sendPkt = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
                     senderSocket.send(sendPkt);
@@ -79,18 +79,18 @@ public class Sender {
                 }
                 if (sent == true) {
                     windowTracker[i] = 's';
-                    String message = messageSender(windowTracker, i, false);
-                    System.out.println(message);
+                    System.out.println("Packet " + i + " is sent, window" + messageSender(windowStart, windowTracker));
                     i++;
                 }
                 if (sent == false) { // if we are at the edge of our window, we listen
                     acknowledgementSocket.receive(ackPkt);
                     ackData = ackPkt.getData();
                     int ack = ackData[0];
+                    if(windowStart == ack){
+                        windowStart++;
+                    }
                     windowTracker[ack] = 'a';
-                    System.out.println("Received Packet "+ack);
-                    String message = messageSender(windowTracker, i, true);
-                    System.out.println(message);
+                    System.out.println("Ack "+ack+" received, window"+messageSender(windowStart,windowTracker));
                 }
             } while (true);
 
@@ -103,75 +103,32 @@ public class Sender {
      This method will take in the array with the packet statuses and the current packet just sent
      the boolean is whether or not this is an acknowledgement message or not
      */
-    public String messageSender(char array[], int n, boolean ack) {
-        String message;
-        if (ack == false) {
-            message = "Packet " + n + " is sent, window["; // do his format here
-            // do a ton of if statements to show what the window looks like.
-
-        } else { // this is an acknowledgement message
-            message = " Ack " + n + " is recieved, window[";
-
-        }
-        if (n < window) { // if we are at the start of the packet.
-
-            switch (array[0]) {
+    public String messageSender(int windowStart, char array[]) {
+        String message = "[";
+        for(int i =0; i< window;i++){
+            if( (windowStart+i-1) < sequence){
+            switch(array[windowStart+i]){
                 case 's':
-                    message = message + "0*";
-                    break;
+                    message = message +""+(windowStart+i)+"*";
+                break;
                 case 'a':
-
                 case 'n':
-                    message = message + "0";
+                    message = message +""+(windowStart+i);
                 default:
                     break;
-
+                
             }
-
-            for (int i = 1; i < window; i++) {
-                switch (array[i]) {
-                    case 's':
-                        message = message + "," + i + "*";
-                        break;
-                    case 'a':
-
-                    case 'n':
-                        message = message + "," + i;
-                    default:
-                        break;
-                }
             }
-        } else { // we have shifted our window at this point
-            switch (array[n + 1 - window]) {
-                case 's':
-                    message = message + (n + 1 - window);
-                case 'a':
-
-                case 'n':
-                    message = message + (n + 1 - window);
-                default:
-                    break;
+            else{
+                message = message+"-";
             }
-
-            for (int i = n + 2 - window; i <= n; i++) { // this should be shifted to our window.
-                if (i > sequence - 1) {
-                    message = message + "-"; // catches outside of window errors
-                } else {
-                    switch (array[i]) {
-                        case 's':
-                            message = message + "," + i;
-
-                        case 'a':
-
-                        case 'n':
-                            message = message + "," + i;
-                        default:
-                            break;
-                    }
-                }
+            if(i!=window-1){
+                message = message+",";
+            }
+            else{
+                message = message +"]";
             }
         }
-        message = message + "]";
         return message;
     }
 
@@ -228,7 +185,7 @@ public class Sender {
      */
     public byte[] prepData(byte[] in_data) {
         in_data[0] = (byte) sequence;
-        in_data[1] =(byte) window;
+        in_data[1] = (byte) window;
         int counter = 2;
         for (int i = 0; i < size; i++) {
             if (drop[i] != 0) {
